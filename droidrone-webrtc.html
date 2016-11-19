@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+    <head>
+	<title>ドロイドローン操作</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta charset="utf-8">
+	<style>
+	    html, body {
+		width: 100%;
+		height: 100%;
+		margin: 0px;
+		padding: 0px
+	    }
+	    #map-canvas {
+		width: 100%;
+		height: 250px;
+		margin: 0px;
+		padding: 0px
+	    }
+	    #canvas-img {
+		//width: 50%;
+		height: 360px;
+		float : left;
+		margin: 0px;
+		padding: 0px
+	    }
+	    #console {
+		//width: 50%;
+		height: 360px;
+		//float : right;
+		margin: 0px;
+		padding: 0px
+	    }
+            #my-video {
+                margin-top: 15px;
+                width: 240px;
+                height: auto;
+                background-color: #eee;
+            }
+
+            #peer-video {
+                width: 780px;
+                height: auto;
+                max-height: 480px;
+                background-color: #eee;
+            }
+	</style>
+	<script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+	<script type="text/javascript" src="https://skyway.io/dist/v2/0.3/peer.js"></script>
+	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCYgefNHuojh9xFK6EAWPDjQc8-x1bg4o0&sensor=true&libraries=geometry"></script>
+	<script type="text/javascript" src="droidrone-webrtc.js"></script>
+    </head>
+    <body>
+	<div id="map-canvas"></div>
+	<div id="droidroneStat"></div>
+	<div id="canvas-img"></div>
+        
+    <div id="console">
+	<div style="float:left">    
+	    <table>
+		<tr>
+		    <td><button onclick="command('l', '左前進')">左　前　進</button></td>
+		    <td><button onclick="command('F', '前進')">　前　進　</button></td>
+		    <td><button onclick="command('r', '右前進')">右　前　進</button></td>
+		</tr><tr>
+		    <td><button onclick="command('M(-25,25)', '左旋回')">左　旋　回</button></td>
+		    <td><button onclick="command('S', '停止')">　停　止　</button></td>
+		    <td><button onclick="command('M(25,-25)', '右旋回')">右　旋　回</button></td>
+		</tr><tr>
+		    <td></td>
+		    <td><button onclick="command('B', '後退')">　後　退　</button></td>
+		    <td></td>
+		</tr><tr>
+		    <td colspan="3">送信:<span id="commandStat"></span></td>
+	    </table>
+
+	</div>
+	<div style="float:right; margin: 10px;"> 
+	    <form id="form1" action="" >
+		<button onclick="dirInit()">最新データ</button><br> 
+		表示データセレクト<select id="dir" onchange="return chgDir()"></select><br>
+		コース設定:<input id="cSetOn" name="RadioGroup1" type="radio"  />
+		<label for="cSetOn">On</label>
+		<input id="cSetOff" name="RadioGroup1" type="radio" checked="checked" />
+		<label for="cSetOff">Off</label><br>
+		Map表示設定:<input id="MapPanOff" name="RadioGroup2" type="radio"  checked="checked" />
+		<label for="MapPanOff">現在地</label>
+		<input id="MapPanOn" name="RadioGroup2" type="radio" />
+		<label for="MapPanOn">パン</label><br>
+	    </form>
+	</div>
+	<div style="float:left; margin: 10px;">
+	    <canvas id="c2" width="320" height="180"></canvas><br>   
+	    <button onclick="setCanvasImg(-1)">保存画像　前</button>
+	    <button onclick="setCanvasImg(1)">保存画像　後</button>
+	    <div id="canvasStat">canvas :</div>
+	    <div>BT受信:<span id="BTStat"></span></div>
+	    server : <span id="serverStat"></span><br>
+	    controller : <span id="controllerStat"></span><br>
+	</div>
+    </div>
+        <hr />
+        <video id="peer-video" autoplay></video>
+	<div>
+	    <p>My-ConnID: <span id="my-connid">-</span></p>
+	    <p>My-CallID: <span id="my-callid">-</span></p>
+ 	    <p>Dist-ConnID: <span id="conn-id">-</span></p>
+	    <p>Dist-CallID: <span id="call-id">-</span></p>
+	    Webカメラ:<input id="webCameraOn" name="RadioGroup3" type="radio"  />
+		<label for="webCameraOn">On</label>
+		<input id="webCameraOff" name="RadioGroup3" type="radio" checked="checked" />
+		<label for="webCameraOff">Off</label><br>
+	</div>
+        <video id="my-video" width="480" autoplay></video>
+	<div id="messages"></div>
+    <canvas id="c1" width="640" height="360"></canvas>
+</body>
+</html>

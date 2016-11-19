@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>ドロイドローンGPS生成テストページ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <style>
+    html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0px;
+        padding: 0px
+      }
+    #map-canvas, #canvas-img {
+        width: 100%;
+        height: 360px;
+        margin: 0px;
+        padding: 0px
+      }
+    #console {
+        width: 100%;
+        height: 20%;
+        margin: 0px;
+        padding: 0px
+      }
+    </style>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCYgefNHuojh9xFK6EAWPDjQc8-x1bg4o0&sensor=true&libraries=geometry"></script>
+
+<script type="text/javascript">
+// Note: This example requires that you consent to location sharing when
+// prompted by your browser. If you see a blank space instead of the map, this
+// is probably because you have denied permission for location sharing.
+
+var map;
+var poly;
+var pos;
+//
+//春日公園　35.837382, 137.948009
+//pos = new google.maps.LatLng(35.837382, 137.948009);
+
+var rote = 0;
+var infowindow = new google.maps.InfoWindow();
+var rInfowindow = new google.maps.InfoWindow();
+var dir = new Date().getTime();;
+
+function initialize() {
+     // Try HTML5 geolocation http://www.htmq.com/geolocation/
+    if( navigator.geolocation ) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                pos = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+                    var mapOptions = {
+                        zoom: 18,
+                        center: pos,
+                        mapTypeId: google.maps.MapTypeId.ROADMAP
+                        //mapTypeId: google.maps.MapTypeId.TERRAIN
+                    };
+                    map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+                    infowindow.setContent('Location found using HTML5.');
+                    infowindow.setPosition(pos);
+                    infowindow.open(map);
+ 
+                //半径を指定した円を地図上の中心点に描く http://www.nanchatte.com/map/circle-v3.html
+                    new google.maps.Circle({
+                        center: pos,       // 中心点(google.maps.LatLng)
+                        fillColor: '#ff0000',   // 塗りつぶし色
+                        fillOpacity: 0.5,       // 塗りつぶし透過度（0: 透明 ⇔ 1:不透明）
+                        map: map,             // 表示させる地図（google.maps.Map）
+                        radius: 3,          // 半径（ｍ）
+                        strokeColor: '#ff0000', // 外周色 
+                        strokeOpacity: 1,       // 外周透過度（0: 透明 ⇔ 1:不透明）
+                        strokeWeight: 1         // 外周太さ（ピクセル）
+                   });
+               
+                    rInfowindow.setContent('Rover 0:');
+                    rInfowindow.setPosition(pos);
+                    rInfowindow.open(map);
+                    //Complex Polylines 
+                    //https://developers.google.com/maps/documentation/javascript/examples/polyline-complex?hl=ja
+                    var polyOptions = {
+                        strokeColor: '#000000',
+                        strokeOpacity: 1.0,
+                        strokeWeight: 3
+                    };
+                    poly = new google.maps.Polyline(polyOptions);
+                    poly.setMap(map);
+
+                    // Add a listener for the click event
+                    google.maps.event.addListener(map, 'click', addLatLng);
+            }, 
+            function() {
+                handleNoGeolocation(true);
+            }
+        );
+    } else {
+        // Browser doesn't support Geolocation
+        handleNoGeolocation(false);
+    }
+}
+
+//次回の課題
+//JavaScriptのみでGoogle Driveに動的にテキストや画像等を保存する
+//http://qiita.com/kjunichi/items/552f13b48685021966e4
+
+//CORSでGoogle Driveにアクセス
+//http://kjunichi.cocolog-nifty.com/misc/2013/03/corsgoogle-driv.html
+
+/**
+ * Handles click events on a map, and adds a new point to the Polyline.
+ * @param {google.maps.MouseEvent} event
+ */
+
+function addLatLng(event) {
+    var path = poly.getPath();
+    // Because path is an MVCArray, we can simply append a new coordinate
+    // and it will automatically appear.
+    pos = event.latLng;
+    path.push(pos);
+    //高度 
+    //https://developers.google.com/maps/documentation/javascript/examples/elevation-simple
+    //http://www.nanchatte.com/map/getElevationForLocation.html 
+    // 要素が１つでも配列に…。 var locations = [latlng];
+    // ElevationServiceのコンストラクタ
+    var elevation = new google.maps.ElevationService();
+    // リクエストを発行
+    elevation.getElevationForLocations({ locations: [pos] }, function(results, status) {
+        if (status == google.maps.ElevationStatus.OK) {
+            if (results[0].elevation) {
+                var time = new Date().getTime();
+                // 標高ゲット！
+                var elev = results[0].elevation;
+                var num = path.getLength();
+                rInfowindow.close();
+		var svURL = getStreetViewURL(pos, rote, 0);
+		rInfowindow.setContent(
+                    '#' + num
+                    + ' ,標高:' + Math.round(elev) + 'm'
+                    + ' ,角度:' + rote + '°<br />'
+                    // infowindo内のコンテンツ(html)を作成 http://kwski.net/api/799/
+                    + '<div class="infowindow">' +
+                    '<img src="' + svURL + '" width="100">' +
+                    //単純に画像をダウンロードさせたい https://teratail.com/questions/3161
+                    '<a href="' + svURL + '" download="' + time + '.jpg">ダウンロード</a>' +
+                    '</div>'
+                );
+                rInfowindow.setPosition(pos);
+                rInfowindow.open(map);
+                
+                //Javascriptでバイナリデータを取得する　http://www.qript.co.jp/blog/technique/215/
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', svURL, true);
+                xhr.responseType = "arraybuffer";
+                xhr.onload = function() {
+                    var bytes = new Uint8Array(this.response);
+                    var binaryData = "";
+                    for (var i = 0, len = bytes.byteLength; i < len; i++) {
+                        binaryData += String.fromCharCode(bytes[i]);
+                    }
+		    //Canvas作製
+		    var image = new Image();
+		    //imgタグのsrc属性には、データURIスキームというBase64エンコードしたデータを記述しても画像が表示できる
+		    var base64 = window.btoa(binaryData);
+                    image.src = "data:image/jpeg;base64," + base64;
+                    var imgStat = document.getElementById("img-stat");
+                    image.onload = function() {
+                        try {
+                            var canvas = document.getElementById('c1');
+                            if (canvas.getContext) {
+                                var context = canvas.getContext('2d');
+                                //鏡像
+                                //context.translate(canvas.width, 0);
+                                //context.scale(-1, 1);
+                                context.drawImage(image, 0, 0, image.width, image.height);
+                                
+                        // XMLHttpRequest オブジェクトを作成
+                                var xhrPost = new XMLHttpRequest();
+                                //非同期通信　コールバック関数
+                                xhrPost.onreadystatechange = checkStatusPost;
+                                // XMLHttpRequestによるPOSTメソッド http://so-zou.jp/web-app/tech/programming/javascript/ajax/post.htm
+                                xhrPost.open('POST', 'droidrone.cgi');
+                                // サーバに対して解析方法を指定する
+                                xhrPost.setRequestHeader( 'Content-Type', 'application/x-www-form-urlencoded' );
+                                // HTMLフォームの形式にデータを変換する
+                                var json = '{"no":' + num
+                                    + ',"lat":' + pos.lat()
+                                    + ',"lng":' +  pos.lng()
+                                    + ',"alti":' + elev
+                                    + ',"rota":' + rote
+                                    + ',"time":' + time
+                                    + ',"pitch":' + 0 
+                                    + ',"accuracy":' + 5
+                                    + "}\n"; //改行で配列にする
+                                rote = rote + 45;
+                                json.innerHTML = json;
+                                var postStr = 'dir=' + dir + '&name=' +  time + '.jpg&json=' + encodeURIComponent(json) + '&base64=' + encodeURIComponent(base64);
+ 				//「application/x-www-form-urlencoded」では半角スペースが「+」でなければならないため、
+				//上記コードではencodeURIComponent()のエンコード結果の「%20」を「+」に修正しています。
+				postStr.replace( /%20/g, '+' );
+				 // データをリクエスト ボディに含めて送信する
+				xhrPost.send(postStr);
+				//imgStat.innerHTML = postStr;
+				imgStat.innerHTML = name + 'imgstr base64 posted!';
+                                function checkStatusPost() {
+                                    var upload = document.getElementById("upload"); 
+                                    if (xhrPost.readyState == 4) {
+                                        if(xhrPost.status == 200) {
+                                            upload.innerHTML =  xhrPost.responseText;
+                                        } else { 
+                                            upload.innerHTML = "サーバーエラー";
+                                        }
+                                    } else { 
+                                        upload.innerHTML = "通信中";
+                                    }
+                                }
+                            }
+                        } catch (exp) {
+                            // エラー処理
+                            imgStat.innerHTML = "Catch err :" +  exp;
+                        }
+                    }
+                }
+                xhr.send();
+             }
+        } else if (status == google.maps.ElevationStatus.INVALID_REQUEST) {
+            alert("リクエストに問題アリ！requestで渡している内容を確認せよ！！");
+        } else if (status == google.maps.ElevationStatus.OVER_QUERY_LIMIT) {
+            alert("短時間にクエリを送りすぎ！落ち着いて！！");
+        } else if (status == google.maps.ElevationStatus.REQUEST_DENIED) {
+            alert("このページでは ElevationResult の利用が許可されていない！・・・なぜ！？");
+        } else if (status == google.maps.ElevationStatus.UNKNOWN_ERROR) {
+            alert("原因不明のなんらかのトラブルが発生した模様。");
+        } else {
+            alert("えぇ～っと・・、バージョンアップ？");
+        }
+    });
+    //
+    //GeoJSONエディタ作ってみた。//http://shimz.me/blog/map/4225
+    //path json 表示
+    //var pathJson = document.getElementById("path-json");
+    //pathJson.innerHTML = JSON.stringify(path);
+}
+
+google.maps.event.addDomListener(window, 'load', initialize);
+
+//Google Street View Image API
+//https://developers.google.com/maps/documentation/streetview/?hl=ja
+//http://office7f.com/2015/01/01/google-street-view-image-api/
+//
+//
+//Hyperlapse で環状八号線を南下する動画を Google ストリートビューからつくってみた
+//http://tips.hecomi.com/entry/20130418/1366295029
+//
+//Google ストリートビューをパノラマ画像として表示する「GSVPano.js」
+//カスタムストリートビューの作成方法
+//http://blogs.yahoo.co.jp/kazu_kazu_souri/38708452.html
+//
+//To get started using Street View API, 
+//you need to create or select a project in the Google Developers Console and enable the API.
+
+function getStreetViewURL(pos, rote, pitch) {
+    return  "http://maps.googleapis.com/maps/api/streetview?"
+	    + "size=640x360&location=" + pos.lat() + "," + pos.lng() 
+	    + "&heading=" + rote + "&pitch=" + pitch 
+	    + "&fov=90&sensor=false";
+    //pitch カメラの上下の角度を指定します。値は-90（真下）～90（真上）まで。
+    //fov カメラのズームを指定します。値は0～120。0が最もズームした値です。デフォルトは90。
+}
+//http://maps.googleapis.com/maps/api/streetview?size=640x640&location=35.907696,139.625015&heading=260&fov=80&pitch=25&sensor=falsee
+</script>
+ 
+</head>
+
+<body>
+<div id="map-canvas"></div>
+<div id="canvas-img">
+<canvas id="c1" width="640" height="360"></canvas>
+</div>
+<a href="map-canvas.html" target="brank">ドロイドローン監視ページ</a>
+<div id="console">
+    latlangJSON;  
+    <div id="latLng-json"></div>
+    uplod:
+    <div id="upload"></div>
+    imgStat:
+    <div id="img-stat"></div>
+</div>
+
+</body>
+</html>

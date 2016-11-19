@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>ドロイドドローン監視パネル</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <style>
+    html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0px;
+        padding: 0px
+      }
+    #map-canvas, #canvas-img {
+        width: 100%;
+        height: 360px;
+        margin: 0px;
+        padding: 0px
+      }
+    #console {
+        width: 100%;
+        height: 20%;
+        margin: 0px;
+        padding: 0px
+      }
+    </style>
+<!--
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+-->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCYgefNHuojh9xFK6EAWPDjQc8-x1bg4o0&sensor=true&libraries=geometry"></script>
+<script type="text/javascript" src="droidrone.js"></script>
+</head>
+<body>
+<div id="map-canvas"></div>
+<form id="form1" action="">
+    表示データセレクト<select id="dir" onchange="return chgDir()"></select>
+    航路設定:<input id="RadioSet" name="RadioGroup1" type="radio"  />
+    <label for="RadioSet">On</label>
+    <input id="Radio1" name="RadioGroup1" type="radio" checked="checked" />
+    <label for="Radio1">Off</label>
+</form>
+<button onclick="dirInit()">最新データ</button>
+<a href="map-canvas-json.html" target="brank">GPSデータ生成ページ</a>
+<div id="console">
+    <div id="serverStat">server :</div>
+    <div id="controllerStat">controller :</div>
+    <div id="droidroneStat"> droidrone :</div>
+    <div id="canvasStat">canvas :</div>
+    
+</div>
+
+<div id="canvas-img">
+<canvas id="c1" width="640" height="360"></canvas>
+<canvas id="c2" width="640" height="360"></canvas>
+</div>
+
+</body>
+</html>
